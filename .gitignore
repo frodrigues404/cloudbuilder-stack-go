@@ -1,0 +1,7 @@
+*/.terraform/
+.terraform
+
+*/builds
+builds/
+
+bootstrap
