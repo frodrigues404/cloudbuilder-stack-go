@@ -1,3 +1,14 @@
+resource "aws_cognito_user_pool" "user_pool" {
+  name = var.project
+}
+
+resource "aws_cognito_user_pool_client" "client" {
+  name         = var.project
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+
+  explicit_auth_flows = ["USER_PASSWORD_AUTH"]
+}
+
 module "cost_tracker_dynamodb" {
   source  = "terraform-aws-modules/dynamodb-table/aws"
   version = "~> 5.0"
@@ -26,7 +37,7 @@ module "cost_tracker_lambda" {
 
   function_name                           = "lambda_cost_tracker"
   description                             = "Save Costs In DynamoDB"
-  handler                                 = "main.handler"
+  handler                                 = "cost-tracker/main.handler"
   runtime                                 = "provided.al2023"
   attach_policy_json                      = true
   tracing_mode                            = "Active"
@@ -79,3 +90,90 @@ EOF
   tags = local.tags
 }
 
+module "register_user_lambda" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "~> 8.0"
+
+  function_name                           = "${var.project}-register-ms"
+  description                             = "Register User in Cognito"
+  handler                                 = "auth-ms/register/main.handler"
+  runtime                                 = "provided.al2023"
+  tracing_mode                            = "Active"
+  attach_policy_json                      = false
+  attach_tracing_policy                   = true
+  create_current_version_allowed_triggers = false
+  timeout                                 = 120
+  architectures                           = ["arm64"]
+
+  environment_variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+
+  allowed_triggers = {
+    APIGateway = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.api_execution_arn}/*"
+    },
+  }
+
+  source_path = [
+    {
+      path = "${path.module}/auth-ms/register"
+      commands = [
+        "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap main.go",
+        ":zip",
+      ]
+      patterns = [
+        "!.*",
+        "bootstrap",
+      ]
+    }
+  ]
+
+  tags = local.tags
+}
+
+module "login_lambda" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "~> 8.0"
+
+  function_name                           = "${var.project}-login-ms"
+  description                             = "Login User in Cognito"
+  handler                                 = "auth-ms/login/main.handler"
+  runtime                                 = "provided.al2023"
+  tracing_mode                            = "Active"
+  attach_policy_json                      = false
+  attach_tracing_policy                   = true
+  create_current_version_allowed_triggers = false
+  timeout                                 = 120
+  architectures                           = ["arm64"]
+
+  environment_variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+
+  allowed_triggers = {
+    APIGateway = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.api_execution_arn}/*"
+    },
+  }
+
+  source_path = [
+    {
+      path = "${path.module}/auth-ms/login"
+      commands = [
+        "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap main.go",
+        ":zip",
+      ]
+      patterns = [
+        "!.*",
+        "bootstrap",
+      ]
+    }
+  ]
+
+  tags = local.tags
+}

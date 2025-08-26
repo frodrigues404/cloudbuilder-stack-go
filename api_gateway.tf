@@ -15,6 +15,16 @@ module "api_gateway" {
         uri = module.cost_tracker_lambda.lambda_function_arn
       }
     },
+    "POST /register" = {
+      integration = {
+        uri = module.register_user_lambda.lambda_function_arn
+      }
+    }
+    "POST /login" = {
+      integration = {
+        uri = module.login_lambda.lambda_function_arn
+      }
+    }
   }
 
   tags = local.tags

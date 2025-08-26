@@ -2,45 +2,78 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 )
 
 type User struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
+	Email    string `json:"email"`
+	Name     string `json:"username"`
+	Password string `json:"password"`
 }
 
-func handler(ctx context.Context, user User) (string, error) {
-	sess := session.Must(session.NewSession())
-	svc := cognitoidentityprovider.New(sess)
+type CognitoActions struct {
+	CognitoClient *cognitoidentityprovider.Client
+}
 
-	userPoolID := os.Getenv("USER_POOL_ID")
-
-	input := &cognitoidentityprovider.AdminCreateUserInput{
-		UserPoolId: &userPoolID,
-		Username:   &user.Email,
-		UserAttributes: []*cognitoidentityprovider.AttributeType{
-			{Name: awsString("email"), Value: awsString(user.Email)},
-			{Name: awsString("name"), Value: awsString(user.Name)},
+// SignUp signs up a user with Amazon Cognito.
+func (actor CognitoActions) SignUp(ctx context.Context, clientId string, userName string, password string, userEmail string) (bool, error) {
+	confirmed := false
+	output, err := actor.CognitoClient.SignUp(ctx, &cognitoidentityprovider.SignUpInput{
+		ClientId: aws.String(clientId),
+		Password: aws.String(password),
+		Username: aws.String(userName),
+		UserAttributes: []types.AttributeType{
+			{Name: aws.String("email"), Value: aws.String(userEmail)},
 		},
-		MessageAction: awsString("SUPPRESS"),
-	}
-
-	_, err := svc.AdminCreateUser(input)
+	})
 	if err != nil {
-		return "", err
+		var invalidPassword *types.InvalidPasswordException
+		if errors.As(err, &invalidPassword) {
+			log.Println(*invalidPassword.Message)
+		} else {
+			log.Printf("Couldn't sign up user %v. Here's why: %v\n", userName, err)
+		}
+	} else {
+		confirmed = output.UserConfirmed
 	}
-
-	return fmt.Sprintf("Usuário %s criado com sucesso", user.Email), nil
+	return confirmed, err
 }
 
-func awsString(s string) *string {
-	return &s
+func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	var user User
+	err := json.Unmarshal([]byte(request.Body), &user)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 400, Body: fmt.Sprintf("Invalid request body: %v", err)}, nil
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(os.Getenv("REGION")))
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+	cognitoClient := cognitoidentityprovider.NewFromConfig(cfg)
+	actor := CognitoActions{CognitoClient: cognitoClient}
+
+	clientId := os.Getenv("USER_POOL_CLIENT_ID")
+	confirmed, err := actor.SignUp(context.TODO(), clientId, user.Name, user.Password, user.Email)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: fmt.Sprintf("Error signing up user: %v", err)}, nil
+	}
+	if !confirmed {
+		return events.APIGatewayProxyResponse{StatusCode: 200, Body: "User signed up but not confirmed. Please check your email for confirmation instructions."}, nil
+	}
+
+	return events.APIGatewayProxyResponse{StatusCode: 200, Body: "User signed up and confirmed successfully."}, nil
 }
 
 func main() {
