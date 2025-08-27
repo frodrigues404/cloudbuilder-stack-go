@@ -27,7 +27,7 @@ module "create_stack_lambda" {
   }
 
   policy_json = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         Effect   = "Allow"
@@ -35,8 +35,8 @@ module "create_stack_lambda" {
         Resource = "*"
       },
       {
-        Effect = "Allow"
-        Action = ["secretsmanager:GetSecretValue"]
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
         Resource = "*"
       }
     ]
