@@ -36,7 +36,6 @@ module "cost_tracker_dynamodb" {
     }
   ]
 
-  tags = local.tags
 }
 
 module "cost_tracker_lambda" {
@@ -95,5 +94,4 @@ EOF
     }
   ]
 
-  tags = local.tags
 }

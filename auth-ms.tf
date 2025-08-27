@@ -38,8 +38,6 @@ module "register_user_lambda" {
       ]
     }
   ]
-
-  tags = local.tags
 }
 
 module "login_lambda" {
@@ -82,8 +80,6 @@ module "login_lambda" {
       ]
     }
   ]
-
-  tags = local.tags
 }
 
 module "confirm_email_lambda" {
@@ -126,8 +122,6 @@ module "confirm_email_lambda" {
       ]
     }
   ]
-
-  tags = local.tags
 }
 
 module "delete_user_lambda" {
@@ -182,6 +176,4 @@ module "delete_user_lambda" {
       ]
     }
   ]
-
-  tags = local.tags
 }

@@ -19,7 +19,6 @@ type Resp struct {
 }
 
 func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-	// 1) Garantir que há authorizer e JWT
 	log.Printf("Request recebido: %+v\n", req)
 	if req.RequestContext.Authorizer.JWT == nil {
 		log.Println("JWT ausente no request (rota não protegida ou token inválido)")
@@ -32,12 +31,9 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		return events.APIGatewayV2HTTPResponse{StatusCode: 401, Body: `{"message":"unauthorized"}`}, nil
 	}
 
-	// 2) Pegar o username do Cognito a partir dos claims
 	username := claims["cognito:username"]
 	sub := claims["sub"]
 
-	// Se não veio cognito:username, tentar resolver via sub (opcional)
-	// AdminDeleteUser requer o *Username* do user pool, não apenas o sub.
 	userPoolID := os.Getenv("USER_POOL_ID")
 	if userPoolID == "" {
 		log.Println("USER_POOL_ID vazio")
@@ -52,7 +48,6 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	client := cip.NewFromConfig(cfg)
 
 	if username == "" && sub != "" {
-		// Fallback: procurar usuário pelo sub
 		out, err := client.ListUsers(ctx, &cip.ListUsersInput{
 			UserPoolId: aws.String(userPoolID),
 			Filter:     aws.String(fmt.Sprintf(`sub = "%s"`, sub)),
@@ -68,11 +63,9 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	}
 
 	if username == "" {
-		// Sem username válido, não dá para deletar com AdminDeleteUser
 		return events.APIGatewayV2HTTPResponse{StatusCode: 401, Body: `{"message":"unauthorized"}`}, nil
 	}
 
-	// 3) Deletar a própria conta
 	_, err = client.AdminDeleteUser(ctx, &cip.AdminDeleteUserInput{
 		UserPoolId: aws.String(userPoolID),
 		Username:   aws.String(username),

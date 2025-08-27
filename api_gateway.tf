@@ -54,6 +54,14 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
+    "POST /register-keys" = {
+      integration = {
+        uri                    = module.create_secret_keys_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
   }
 
   tags = local.tags
