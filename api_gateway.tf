@@ -8,6 +8,7 @@ module "api_gateway" {
   create_certificate    = false
   create_domain_name    = false
   create_domain_records = false
+  create_routes_and_integrations = false
 
   authorizers = {
     cognito = {
