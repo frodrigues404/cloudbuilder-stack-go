@@ -9,21 +9,50 @@ module "api_gateway" {
   create_domain_name    = false
   create_domain_records = false
 
+  authorizers = {
+    cognito = {
+      authorizer_type  = "JWT"
+      identity_sources = ["$request.header.Authorization"]
+
+      jwt_configuration = {
+        audience = [aws_cognito_user_pool_client.client.id]
+        issuer   = "https://${aws_cognito_user_pool.user_pool.endpoint}"
+      }
+    }
+  }
+
   routes = {
     "GET /week-costs" = {
       integration = {
-        uri = module.cost_tracker_lambda.lambda_function_arn
+        uri                    = module.cost_tracker_lambda.lambda_function_arn
+        payload_format_version = "2.0"
       }
     },
     "POST /register" = {
       integration = {
-        uri = module.register_user_lambda.lambda_function_arn
+        uri                    = module.register_user_lambda.lambda_function_arn
+        payload_format_version = "2.0"
       }
     }
     "POST /login" = {
       integration = {
-        uri = module.login_lambda.lambda_function_arn
+        uri                    = module.login_lambda.lambda_function_arn
+        payload_format_version = "2.0"
       }
+    }
+    "POST /verify-email" = {
+      integration = {
+        uri                    = module.confirm_email_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+    }
+    "DELETE /user" = {
+      integration = {
+        uri                    = module.delete_user_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
     }
   }
 
