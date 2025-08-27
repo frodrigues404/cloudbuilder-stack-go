@@ -8,6 +8,7 @@ module "api_gateway" {
   create_certificate    = false
   create_domain_name    = false
   create_domain_records = false
+  body                  = file("${path.module}/openapi.yaml")
   
   authorizers = {
     cognito = {

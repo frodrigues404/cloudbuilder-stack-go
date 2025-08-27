@@ -1,0 +1,553 @@
+openapi: 3.0.3
+info:
+  title: cloudbuilder-development-api
+  description: |
+    API do projeto **cloudbuilder** — HTTP API (API Gateway v2) com integrações Lambda proxy
+    e autenticação via **Cognito JWT**.
+  version: "1.0.0"
+servers:
+  - url: https://88jufkke87.execute-api.us-east-1.amazonaws.com/{basePath}
+    variables:
+      basePath:
+        default: ""
+tags:
+  - name: CloudFormation
+    x-amazon-apigateway-tag-value: CloudFormation
+  - name: Auth
+    x-amazon-apigateway-tag-value: Auth
+  - name: Organization
+    x-amazon-apigateway-tag-value: Organization
+
+# CORS global (HTTP API)
+x-amazon-apigateway-cors:
+  allowOrigins: ["*"]
+  allowHeaders: ["*"]
+  allowMethods: ["*"]
+
+paths:
+  /register:
+    post:
+      summary: Registrar usuário (Cognito SignUp) — **payload v1.0**
+      description: |
+        Compatível com funções Lambda que recebem `events.APIGatewayProxyRequest` (REST v1).
+        Envie `username`, `email` e `password`.  
+        A resposta **200** é texto simples.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              exemplo:
+                value:
+                  username: "john.doe"
+                  email: "john.doe@example.com"
+                  password: "MyP@ssw0rd!"
+      responses:
+        "200":
+          description: Resultado do cadastro (texto)
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "User signed up and confirmed successfully."
+        "400":
+          description: Requisição inválida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Erro interno ao registrar
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "1.0"
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-register-ms/invocations
+        connectionType: INTERNET
+
+  /login:
+    post:
+      summary: Autenticar (login) com Cognito — **payload v1.0**
+      description: |
+        Esta rota usa **payloadFormatVersion 1.0** para compatibilizar com funções Lambda que
+        esperam `events.APIGatewayProxyRequest` (v1).  
+        Envie `username` e `password`; a resposta **200** retorna o **ID Token** como texto puro.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              exemplo:
+                value:
+                  username: "user@example.com"
+                  password: "MyP@ssw0rd!"
+      responses:
+        "200":
+          description: ID Token (JWT) em texto
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: eyJraWQiOiJrS2... (JWT)
+        "401":
+          description: Falha de autenticação
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Erro interno ao autenticar
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "1.0"
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-login-ms/invocations
+        connectionType: INTERNET
+
+  /verify-email:
+    post:
+      summary: Confirmar e-mail (Cognito ConfirmSignUp) — **payload v1.0**
+      description: |
+        Compatível com funções Lambda que recebem `events.APIGatewayProxyRequest` (REST v1).
+        Envie `username` e `code`. Retorna texto simples.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, code]
+              properties:
+                username:
+                  type: string
+                  example: "john.doe"
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        "200":
+          description: E-mail confirmado
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Email confirmed successfully"
+        "400":
+          description: Requisição inválida ou confirmação falhou
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Email confirmation failed"
+        "500":
+          description: Erro interno ao confirmar
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Error confirming email: <details>"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "1.0" 
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-confirm-email-ms/invocations
+        connectionType: INTERNET
+
+  /user:
+    delete:
+      summary: Deletar usuário autenticado (Cognito)
+      tags: [Auth]
+      security:
+        - cognito: []
+      responses:
+        "200":
+          description: Usuário deletado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "user deleted" }
+        "401":
+          description: Não autorizado (token ausente ou inválido)
+        "500":
+          description: Erro ao deletar usuário
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-delete-user-ms/invocations
+        connectionType: INTERNET
+
+  /register-keys:
+    post:
+      summary: Registrar chaves no Secrets Manager — **payload v2.0**
+      description: |
+        Salva `accessKeyId` e `secretAccessKey` em **Secrets Manager** no path:
+        `username/{accountName}/access_keys`.  
+        Requer JWT do Cognito. Criação retorna **201**; atualização de segredo existente retorna **200**.
+      tags: [Organization]
+      security:
+        - cognito: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountName, accessKeyId, secretAccessKey]
+              properties:
+                accountName:
+                  type: string
+                  description: Nome lógico da conta alvo (usado no path do secret).
+                  example: dev-account
+                accessKeyId:
+                  type: string
+                  example: AKIA...
+                secretAccessKey:
+                  type: string
+                  example: wJalrXUtnFEMI...
+                description:
+                  type: string
+                  description: Descrição opcional do secret.
+                tags:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Tags extras para o Secret (a Lambda adiciona `owner` e `account` automaticamente).
+            examples:
+              exemplo-criar:
+                value:
+                  accountName: dev-account
+                  accessKeyId: AKIAEXAMPLE
+                  secretAccessKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCY
+                  description: "Credenciais de automação DEV"
+                  tags:
+                    project: cloudbuilder
+                    env: dev
+      responses:
+        "201":
+          description: Secret criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:    { type: string, example: "Secret created successfully" }
+                  secretName: { type: string, example: "john.doe/dev-account/access_keys" }
+                  versionId:  { type: string, example: "5a1f7f89-1234-4c5a-b7a3-9b0e7c1a2d34" }
+                  owner:      { type: string, example: "john.doe" }
+                  account:    { type: string, example: "dev-account" }
+        "200":
+          description: Secret já existia e foi atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:    { type: string, example: "Secret updated successfully" }
+                  secretName: { type: string, example: "john.doe/dev-account/access_keys" }
+                  versionId:  { type: string, example: "3c9a1b2d-5678-49e0-8f2a-1c2d3e4f5a6b" }
+                  owner:      { type: string, example: "john.doe" }
+                  account:    { type: string, example: "dev-account" }
+        "400":
+          description: Requisição inválida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "field 'accountName' is required" }
+        "401":
+          description: Não autorizado (JWT ausente/ inválido)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "unauthorized" }
+        "500":
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "failed to create secret: <details>" }
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-create-keys-ms/invocations
+        connectionType: INTERNET
+
+  /create-stack:
+    post:
+      summary: Iniciar criação de Stack no CloudFormation — **payload v2.0**
+      description: |
+        Cria uma stack **sem aguardar conclusão** (retorna imediatamente).
+        Requer JWT (Cognito). O template pode ser **inline** (`template`) ou por **URL** (`templateUrl`).
+        Observação: `template` inline deve ter no máximo **51.200 bytes**.
+      tags: [CloudFormation]
+      security:
+        - cognito: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountName, stackName]
+              oneOf:
+                - required: [template]
+                - required: [templateUrl]
+              properties:
+                accountName: { type: string, example: "dev-account" }
+                stackName:   { type: string, example: "MyTestStack" }
+                template:
+                  type: object
+                  description: Template CloudFormation inline (JSON). Use `templateUrl` se > 51 KB.
+                templateUrl:
+                  type: string
+                  format: uri
+                  description: URL pública/S3 do template.
+                  example: "https://s3.amazonaws.com/meus-templates/cfn.json"
+                parameters:
+                  type: object
+                  additionalProperties: { type: string }
+                  example: { Env: "dev" }
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                    enum: [CAPABILITY_IAM, CAPABILITY_NAMED_IAM, CAPABILITY_AUTO_EXPAND]
+                roleArn: { type: string }
+                tags:
+                  type: object
+                  additionalProperties: { type: string }
+                  example: { project: "cloudbuilder", env: "dev" }
+                onFailure:
+                  type: string
+                  enum: [DO_NOTHING, ROLLBACK, DELETE]
+                  example: ROLLBACK
+                disableRollback:  { type: boolean }
+                timeoutInMinutes: { type: integer }
+                clientRequestToken: { type: string }
+            examples:
+              inlineTemplate:
+                summary: Template inline
+                value:
+                  accountName: "dev-account"
+                  stackName: "MyTestStack"
+                  template:
+                    AWSTemplateFormatVersion: "2010-09-09"
+                    Description: "Exemplo"
+                    Resources:
+                      MyBucket:
+                        Type: "AWS::S3::Bucket"
+                        Properties:
+                          BucketName: "meu-bucket-exemplo-123"
+                  onFailure: "ROLLBACK"
+              templateUrl:
+                summary: Template via URL
+                value:
+                  accountName: "dev-account"
+                  stackName: "MyTestStack"
+                  templateUrl: "https://s3.amazonaws.com/meus-templates/template.json"
+                  onFailure: "DO_NOTHING"
+      responses:
+        "200":
+          description: Criação iniciada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:   { type: string, example: "stack creation started" }
+                  stackId:   { type: string }
+                  stackName: { type: string }
+                  account:   { type: string }
+                  owner:     { type: string }
+                  status:    { type: string, example: "CREATE_IN_PROGRESS" }
+        "400":
+          description: Requisição inválida (ex. template inválido/maior que 51 KB)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "template must be valid JSON: ..." }
+        "401":
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "unauthorized" }
+        "404":
+          description: Credenciais da conta não encontradas no Secrets Manager
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "failed to get credentials from secrets manager: ..." }
+        "500":
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "aws config error: ..." }
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"   # Lambda usa APIGatewayV2HTTPRequest
+        type: aws_proxy
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-create-stack-ms/invocations
+        connectionType: INTERNET
+
+components:
+  securitySchemes:
+    cognito:
+      # Para HTTP API v2, declare como apiKey (Auth header) e configure o authorizer via extensão:
+      type: apiKey
+      in: header
+      name: Authorization
+      x-amazon-apigateway-authorizer:
+        type: jwt
+        identitySource: "$request.header.Authorization"
+        jwtConfiguration:
+          audience:
+            - "3lsv98nhji49vprp92kl65nn7t"
+          issuer: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_jQan4fJh8"
+
+  schemas:
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "ok"
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "validation error"
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username: { type: string, example: "john.doe" }
+        email:    { type: string, format: email }
+        password: { type: string, minLength: 6 }
+
+    RegisterResponse:
+      type: object
+      properties:
+        message: { type: string, example: "user created" }
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, example: "user@example.com" }
+        password: { type: string }
+    LoginResponse:
+      type: object
+      properties:
+        idToken:
+          type: string
+    VerifyEmailRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+    RegisterKeysRequest:
+      type: object
+      required: [accountName, accessKeyId, secretAccessKey]
+      properties:
+        accountName:
+          type: string
+        accessKeyId:
+          type: string
+        secretAccessKey:
+          type: string
+    CreateStackRequest:
+      type: object
+      required: [accountName, stackName]
+      properties:
+        accountName:
+          type: string
+        stackName:
+          type: string
+        template:
+          type: object
+          description: Template CloudFormation inline (JSON). Use `templateUrl` se maior que 51 KB.
+        templateUrl:
+          type: string
+          format: uri
+          description: URL pública/S3 para o template (JSON/YAML).
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum: [CAPABILITY_IAM, CAPABILITY_NAMED_IAM, CAPABILITY_AUTO_EXPAND]
+        roleArn:
+          type: string
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+        onFailure:
+          type: string
+          enum: [DO_NOTHING, ROLLBACK, DELETE]
+        disableRollback:
+          type: boolean
+        timeoutInMinutes:
+          type: integer
+        clientRequestToken:
+          type: string
+      oneOf:
+        - required: [template]
+        - required: [templateUrl]
+    CreateStackResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "stack creation started"
+        stackId:
+          type: string
+        stackName:
+          type: string
+        account:
+          type: string
+        owner:
+          type: string
+        status:
+          type: string
+          example: "CREATE_IN_PROGRESS"
+
+x-amazon-apigateway-importexport-version: "1.0"
