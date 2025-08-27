@@ -88,10 +88,6 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		return events.APIGatewayProxyResponse{StatusCode: 500, Body: fmt.Sprintf("Error signing up user: %v", err)}, nil
 	}
 	if !confirmed {
-		// err := actor.SendConfirmationCode(context.TODO(), clientId, user.Name)
-		if err != nil {
-			return events.APIGatewayProxyResponse{StatusCode: 500, Body: fmt.Sprintf("Error sending confirmation code: %v", err)}, nil
-		}
 		return events.APIGatewayProxyResponse{StatusCode: 200, Body: "User signed up but not confirmed. Please check your email for confirmation instructions."}, nil
 	}
 

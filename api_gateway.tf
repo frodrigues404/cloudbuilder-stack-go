@@ -22,12 +22,12 @@ module "api_gateway" {
   }
 
   routes = {
-    "GET /week-costs" = {
-      integration = {
-        uri                    = module.cost_tracker_lambda.lambda_function_arn
-        payload_format_version = "2.0"
-      }
-    },
+    # "GET /week-costs" = {
+    #   integration = {
+    #     uri                    = module.cost_tracker_lambda.lambda_function_arn
+    #     payload_format_version = "2.0"
+    #   }
+    # },
     "POST /register" = {
       integration = {
         uri                    = module.register_user_lambda.lambda_function_arn
@@ -62,7 +62,13 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
+    "POST /create-stack" = {
+      integration = {
+        uri                    = module.create_stack_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
   }
-
-  tags = local.tags
 }

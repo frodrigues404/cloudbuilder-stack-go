@@ -80,7 +80,6 @@ func resolveUsernameBySub(ctx context.Context, client *cip.Client, userPoolID, s
 }
 
 func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-	// ===== Auth (Cognito JWT authorizer) =====
 	if req.RequestContext.Authorizer.JWT == nil || req.RequestContext.Authorizer.JWT.Claims == nil {
 		return apiError(401, errors.New("unauthorized")), nil
 	}
@@ -113,7 +112,6 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		return apiError(401, errors.New("unauthorized")), nil
 	}
 
-	// ===== Parse body =====
 	rawBody := req.Body
 	if req.IsBase64Encoded {
 		decoded, err := base64.StdEncoding.DecodeString(req.Body)
@@ -134,8 +132,6 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		return apiError(400, errors.New("fields 'accessKeyId' and 'secretAccessKey' are required")), nil
 	}
 
-	// Nome do secret baseado em usuario + conta
-	// Ex.: username/account_name/access_keys
 	secretName := fmt.Sprintf("%s/%s/access_keys", owner, body.AccountName)
 
 	secretString, err := buildSecretString(body.AccessKeyID, body.SecretAccessKey)
@@ -145,7 +141,6 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 
 	smClient := newSecretsClient(cfg)
 
-	// Tags (inclui owner e account)
 	if body.Tags == nil {
 		body.Tags = map[string]string{}
 	}
@@ -157,7 +152,6 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		smTags = append(smTags, types.Tag{Key: aws.String(k), Value: aws.String(v)})
 	}
 
-	// Tenta criar o secret; se já existir, atualiza o valor
 	createOut, createErr := smClient.CreateSecret(ctx, &sm.CreateSecretInput{
 		Name:         aws.String(secretName),
 		Description:  aws.String(body.Description),
