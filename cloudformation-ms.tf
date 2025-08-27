@@ -44,7 +44,7 @@ module "create_stack_lambda" {
 
   source_path = [
     {
-      path = "${path.module}/cmd/cloudformation-ms/create-stack"
+      path = "${path.module}/cmd/cloudformation-ms/create-stack/cmd/lambda"
       commands = [
         "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap main.go",
         ":zip",
