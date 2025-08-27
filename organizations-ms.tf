@@ -27,15 +27,15 @@ module "create_secret_keys_lambda" {
   }
 
   policy_json = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
-            "secretsmanager:CreateSecret", 
-            "secretsmanager:PutSecretValue", 
-            "secretsmanager:UpdateSecret",
-            "secretsmanager:TagResource"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:CreateSecret",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:TagResource"
         ]
         Resource = "*"
       },
