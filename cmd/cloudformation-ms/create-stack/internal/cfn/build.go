@@ -21,22 +21,6 @@ func Capabilities(vals []string) []cft.Capability {
 	return out
 }
 
-func Parameters(m map[string]string) []cft.Parameter {
-	if len(m) == 0 {
-		return nil
-	}
-	out := make([]cft.Parameter, 0, len(m))
-	for k, v := range m {
-		key := k
-		val := v
-		out = append(out, cft.Parameter{
-			ParameterKey:   &key,
-			ParameterValue: &val,
-		})
-	}
-	return out
-}
-
 func Tags(m map[string]string) []cft.Tag {
 	if len(m) == 0 {
 		return nil

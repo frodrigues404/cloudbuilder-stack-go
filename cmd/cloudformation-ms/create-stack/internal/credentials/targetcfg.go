@@ -14,11 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-// BuildTargetConfig aplica credenciais do secret (e opcionalmente AssumeRole) e valida com STS.
 func BuildTargetConfig(ctx context.Context, base aws.Config, keys types.SecretKeys) (aws.Config, error) {
 	target := base
 
-	// Credenciais do secret (long-term ou temporárias)
 	if keys.AccessKeyID != "" && keys.SecretAccessKey != "" {
 		target.Credentials = aws.NewCredentialsCache(
 			credentials.NewStaticCredentialsProvider(

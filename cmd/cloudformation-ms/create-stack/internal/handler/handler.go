@@ -24,7 +24,6 @@ import (
 	"create-stack-ms/internal/types"
 )
 
-// deps simples para injetar clientes Cognito/SM se precisar (facilita testes)
 type deps struct {
 	cip *cip.Client
 	sm  *sm.Client
@@ -47,14 +46,12 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		sm:  sm.NewFromConfig(cfg),
 	}
 
-	// ---- Auth (Cognito) ----
 	owner, err := auth.OwnerFromRequest(ctx, req, cfg, d)
 	if err != nil || owner == "" {
 		return httpresp.Error(401, errors.New("unauthorized")), nil
 	}
 	log.Printf("[INFO] Authenticated owner=%s", owner)
 
-	// ---- Parse body ----
 	raw := req.Body
 	if req.IsBase64Encoded {
 		b, err := base64.StdEncoding.DecodeString(req.Body)
@@ -68,14 +65,13 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	if err := json.Unmarshal([]byte(raw), &body); err != nil {
 		return httpresp.Error(400, fmt.Errorf("invalid JSON body: %w", err)), nil
 	}
-	log.Printf("[INFO] Payload summary: accountName=%s stackName=%s templateInline=%t templateUrlSet=%t params=%d tags=%d caps=%v",
-		body.AccountName, body.StackName, len(body.Template) > 0, body.TemplateURL != "", len(body.Parameters), len(body.Tags), body.Capabilities)
+	log.Printf("[INFO] Payload summary: accountName=%s stackName=%s templateInline=%t templateUrlSet=%t tags=%d caps=%v",
+		body.AccountName, body.StackName, len(body.Template) > 0, body.TemplateURL != "", len(body.Tags), body.Capabilities)
 
 	if body.AccountName == "" || body.StackName == "" {
 		return httpresp.Error(400, errors.New("fields 'accountName' and 'stackName' are required")), nil
 	}
 
-	// Template (inline ou URL)
 	var templateBody *string
 	if len(body.Template) > 0 {
 		var tmp map[string]any
@@ -115,7 +111,6 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	in := &cf.CreateStackInput{
 		StackName:    &body.StackName,
 		Capabilities: cfn.Capabilities(body.Capabilities),
-		Parameters:   cfn.Parameters(body.Parameters),
 		Tags:         cfn.Tags(body.Tags),
 	}
 	if body.ClientRequestToken != "" {

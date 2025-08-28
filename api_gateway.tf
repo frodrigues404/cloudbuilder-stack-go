@@ -8,7 +8,6 @@ module "api_gateway" {
   create_certificate    = false
   create_domain_name    = false
   create_domain_records = false
-  body                  = file("${path.module}/openapi.yaml")
   
   authorizers = {
     cognito = {
@@ -28,7 +27,7 @@ module "api_gateway" {
   }
 
   routes = {
-    "POST /register" = {
+    "POST /auth/register" = {
       integration = {
         uri                    = module.register_user_lambda.lambda_function_arn
         payload_format_version = "2.0"
@@ -36,7 +35,7 @@ module "api_gateway" {
       throttling_rate_limit  = 1
       throttling_burst_limit = 3
     }
-    "POST /login" = {
+    "POST /auth/login" = {
       integration = {
         uri                    = module.login_lambda.lambda_function_arn
         payload_format_version = "2.0"
@@ -44,7 +43,7 @@ module "api_gateway" {
       throttling_rate_limit  = 2
       throttling_burst_limit = 4
     }
-    "POST /verify-email" = {
+    "POST /auth/verify-email" = {
       integration = {
         uri                    = module.confirm_email_lambda.lambda_function_arn
         payload_format_version = "2.0"
@@ -52,7 +51,7 @@ module "api_gateway" {
       throttling_rate_limit  = 1
       throttling_burst_limit = 3
     }
-    "DELETE /user" = {
+    "DELETE /auth/delete-user" = {
       integration = {
         uri                    = module.delete_user_lambda.lambda_function_arn
         payload_format_version = "2.0"
@@ -60,7 +59,7 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
-    "POST /register-keys" = {
+    "POST /organization/register-keys" = {
       integration = {
         uri                    = module.create_secret_keys_lambda.lambda_function_arn
         payload_format_version = "2.0"
@@ -68,7 +67,7 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
-    "POST /create-stack" = {
+    "POST /cf/create-stack" = {
       integration = {
         uri                    = module.create_stack_lambda.lambda_function_arn
         payload_format_version = "2.0"

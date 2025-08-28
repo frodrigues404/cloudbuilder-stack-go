@@ -25,7 +25,7 @@ x-amazon-apigateway-cors:
   allowMethods: ["*"]
 
 paths:
-  /register:
+  /auth/register:
     post:
       summary: Registrar usuário (Cognito SignUp) — **payload v1.0**
       description: |
@@ -70,7 +70,7 @@ paths:
         uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-register-ms/invocations
         connectionType: INTERNET
 
-  /login:
+  /auth/login:
     post:
       summary: Autenticar (login) com Cognito — **payload v1.0**
       description: |
@@ -114,7 +114,7 @@ paths:
         uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-login-ms/invocations
         connectionType: INTERNET
 
-  /verify-email:
+  /auth/verify-email:
     post:
       summary: Confirmar e-mail (Cognito ConfirmSignUp) — **payload v1.0**
       description: |
@@ -164,7 +164,7 @@ paths:
         uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-confirm-email-ms/invocations
         connectionType: INTERNET
 
-  /user:
+  /auth/user:
     delete:
       summary: Deletar usuário autenticado (Cognito)
       tags: [Auth]
@@ -190,7 +190,7 @@ paths:
         uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-delete-user-ms/invocations
         connectionType: INTERNET
 
-  /register-keys:
+  /organization/register-keys:
     post:
       summary: Registrar chaves no Secrets Manager — **payload v2.0**
       description: |
@@ -292,7 +292,7 @@ paths:
         uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-create-keys-ms/invocations
         connectionType: INTERNET
 
-  /create-stack:
+  /cf/create-stack:
     post:
       summary: Iniciar criação de Stack no CloudFormation — **payload v2.0**
       description: |

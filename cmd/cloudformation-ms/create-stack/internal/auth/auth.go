@@ -35,7 +35,7 @@ func OwnerFromRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest, c
 	if req.RequestContext.Authorizer.JWT == nil || req.RequestContext.Authorizer.JWT.Claims == nil {
 		return "", errors.New("unauthorized")
 	}
-	claims := req.RequestContext.Authorizer.JWT.Claims // map[string]string
+	claims := req.RequestContext.Authorizer.JWT.Claims
 
 	if u, ok := claims["cognito:username"]; ok && u != "" {
 		log.Printf("[INFO] Auth owner from cognito:username=%s", u)

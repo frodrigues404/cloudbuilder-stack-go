@@ -14,7 +14,6 @@ module "cdn" {
 
   default_root_object = "index.html"
 
-  # OAI (segue igual ao seu)
   create_origin_access_identity = true
   origin_access_identities = {
     s3_bucket_one = "CloudFront may access this bucket"
@@ -22,7 +21,6 @@ module "cdn" {
 
   origin = {
     s3_docs = {
-      # Use o domain_name REST do bucket (NÃO o website endpoint)
       domain_name = module.openapi_bucket.s3_bucket_bucket_regional_domain_name
       s3_origin_config = {
         origin_access_identity = "s3_bucket_one"
@@ -39,10 +37,9 @@ module "cdn" {
     query_string           = false
   }
 
-  # <<< Certificado padrão do CloudFront >>>
   viewer_certificate = {
     cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1.2_2021"
+    minimum_protocol_version       = "TLSv1"
   }
 }
 

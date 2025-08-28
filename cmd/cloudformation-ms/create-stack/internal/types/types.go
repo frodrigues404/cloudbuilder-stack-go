@@ -13,9 +13,8 @@ type SecretKeys struct {
 type RequestBody struct {
 	AccountName        string            `json:"accountName"`
 	StackName          string            `json:"stackName"`
-	Template           json.RawMessage   `json:"template"`              // Inline JSON (TemplateBody)
-	TemplateURL        string            `json:"templateUrl,omitempty"` // Alternativa: URL
-	Parameters         map[string]string `json:"parameters,omitempty"`
+	Template           json.RawMessage   `json:"template"`               // Inline JSON (TemplateBody)
+	TemplateURL        string            `json:"templateUrl,omitempty"`  // Alternativa: URL
 	Capabilities       []string          `json:"capabilities,omitempty"` // ["CAPABILITY_IAM", ...]
 	RoleARN            string            `json:"roleArn,omitempty"`
 	Tags               map[string]string `json:"tags,omitempty"`
