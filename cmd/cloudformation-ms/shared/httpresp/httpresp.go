@@ -21,9 +21,7 @@ func OK(status int, payload any) events.APIGatewayV2HTTPResponse {
 }
 
 func Error(status int, err error) events.APIGatewayV2HTTPResponse {
-	out := map[string]string{
-		"error": err.Error(),
-	}
+	out := map[string]string{"message": err.Error()}
 	b, _ := json.Marshal(out)
 	log.Printf("[ERROR] Response %d: %s", status, string(b))
 	return events.APIGatewayV2HTTPResponse{

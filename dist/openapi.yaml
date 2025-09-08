@@ -366,28 +366,33 @@ paths:
                   stackName: "MyTestStack"
                   templateUrl: "https://s3.amazonaws.com/meus-templates/template.json"
                   onFailure: "DO_NOTHING"
-      responses:
-        "200":
-          description: Criação iniciada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:   { type: string, example: "stack creation started" }
-                  stackId:   { type: string }
-                  stackName: { type: string }
-                  account:   { type: string }
-                  owner:     { type: string }
-                  status:    { type: string, example: "CREATE_IN_PROGRESS" }
-        "400":
-          description: Requisição inválida (ex. template inválido/maior que 51 KB)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "template must be valid JSON: ..." }
+    /cf/get-stacks:
+      get:
+        summary: Obter stacks do CloudFormation
+        description: |
+          Retorna as stacks do CloudFormation para o usuário autenticado.
+          Requer JWT (Cognito).
+        tags: [CloudFormation]
+        security:
+          - cognito: []
+        responses:
+          "200":
+            description: Listar as stacks
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    accountName:   { type: string, example: "dev-account" }
+                    stackName: { type: string, example: "MyTestStack" }
+          "400":
+            description: Requisição inválida (ex. Credenciais não existem)
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message: { type: string, example: "Credentials for account 'dev-account' not found" }
         "401":
           description: Não autorizado
           content:
@@ -396,14 +401,6 @@ paths:
                 type: object
                 properties:
                   message: { type: string, example: "unauthorized" }
-        "404":
-          description: Credenciais da conta não encontradas no Secrets Manager
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "failed to get credentials from secrets manager: ..." }
         "500":
           description: Erro interno
           content:
@@ -413,10 +410,10 @@ paths:
                 properties:
                   message: { type: string, example: "aws config error: ..." }
       x-amazon-apigateway-integration:
-        payloadFormatVersion: "2.0"   # Lambda usa APIGatewayV2HTTPRequest
+        payloadFormatVersion: "2.0"
         type: aws_proxy
-        httpMethod: POST
-        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-create-stack-ms/invocations
+        httpMethod: GET
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:010427274449:function:cloudbuilder-get-stacks-ms/invocations
         connectionType: INTERNET
 
 components:
@@ -549,5 +546,15 @@ components:
         status:
           type: string
           example: "CREATE_IN_PROGRESS"
+    GetStackRequest:
+      type: object
+      required: [stackName]
+      properties:
+        stackName:
+          type: string
+        account:
+          type: string
+        owner:
+          type: string
 
 x-amazon-apigateway-importexport-version: "1.0"

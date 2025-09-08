@@ -16,12 +16,12 @@ import (
 	cip "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	sm "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 
-	"create-stack-ms/internal/auth"
-	"create-stack-ms/internal/awsconfig"
-	"create-stack-ms/internal/cfn"
-	"create-stack-ms/internal/credentials"
-	"create-stack-ms/internal/httpresp"
-	"create-stack-ms/internal/types"
+	"cloudformation-ms/shared/auth"
+	"cloudformation-ms/shared/awsconfig"
+	"cloudformation-ms/shared/cfn"
+	"cloudformation-ms/shared/credentials"
+	"cloudformation-ms/shared/httpresp"
+	"cloudformation-ms/shared/types"
 )
 
 type deps struct {
@@ -35,7 +35,6 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	log.Printf("[INFO] Incoming request: reqId=%s method=%s path=%s",
 		req.RequestContext.RequestID, req.RequestContext.HTTP.Method, req.RawPath)
 
-	// ---- SDK base ----
 	cfg, err := awsconfig.Base(ctx)
 	if err != nil {
 		return httpresp.Error(500, fmt.Errorf("aws config error: %w", err)), nil
@@ -61,7 +60,7 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		raw = string(b)
 	}
 
-	var body types.RequestBody
+	var body types.CreateStackRequestBody
 	if err := json.Unmarshal([]byte(raw), &body); err != nil {
 		return httpresp.Error(400, fmt.Errorf("invalid JSON body: %w", err)), nil
 	}
@@ -90,7 +89,6 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		return httpresp.Error(400, errors.New("either 'template' or 'templateUrl' is required")), nil
 	}
 
-	// ---- Secrets Manager: credenciais da conta alvo ----
 	secretName := fmt.Sprintf("%s/%s/access_keys", owner, body.AccountName)
 	log.Printf("[INFO] Fetching credentials from secret: %s", secretName)
 
@@ -99,13 +97,11 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		return httpresp.Error(404, fmt.Errorf("failed to get credentials from secrets manager: %w", err)), nil
 	}
 
-	// ---- Config alvo (credenciais / assume role / sts check) ----
 	targetCfg, err := credentials.BuildTargetConfig(ctx, cfg, keys)
 	if err != nil {
 		return httpresp.Error(401, fmt.Errorf("invalid credentials for account '%s': %w", body.AccountName, err)), nil
 	}
 
-	// ---- CloudFormation: CreateStack (não aguarda conclusão) ----
 	cfnClient := cf.NewFromConfig(targetCfg)
 
 	in := &cf.CreateStackInput{
@@ -154,7 +150,6 @@ func Handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	}
 	log.Printf("[INFO] CreateStack started successfully: stackId=%s", aws.ToString(out.StackId))
 
-	// Retorna imediatamente, sem esperar o completion
 	resp := types.ResponseBody{
 		Message:   "stack creation started",
 		StackID:   aws.ToString(out.StackId),

@@ -1,4 +1,4 @@
-module cloudformation-ms
+module cloudformation-ms/shared
 
 go 1.24.6
 
@@ -6,11 +6,10 @@ require (
 	github.com/aws/aws-lambda-go v1.49.0
 	github.com/aws/aws-sdk-go-v2 v1.38.1
 	github.com/aws/aws-sdk-go-v2/config v1.31.3
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.65.0
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.57.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.0
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.7
-	github.com/aws/aws-sdk-go-v2/credentials/stscreds v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.0
 )
 

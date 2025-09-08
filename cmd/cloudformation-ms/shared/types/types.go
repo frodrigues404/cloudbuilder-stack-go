@@ -10,7 +10,8 @@ type SecretKeys struct {
 	ExternalID      string `json:"externalId,omitempty"`
 }
 
-type RequestBody struct {
+// CreateStack types
+type CreateStackRequestBody struct {
 	AccountName        string            `json:"accountName"`
 	StackName          string            `json:"stackName"`
 	Template           json.RawMessage   `json:"template"`               // Inline JSON (TemplateBody)
@@ -24,6 +25,30 @@ type RequestBody struct {
 	ClientRequestToken string            `json:"clientRequestToken,omitempty"`
 }
 
+// GetStacks types
+type GetStacksRequestBody struct {
+	AccountName string `json:"accountName"`
+	StackName   string `json:"stackName,omitempty"` // Optional: filter by specific stack
+}
+
+type StackInfo struct {
+	StackName        string            `json:"stackName"`
+	StackID          string            `json:"stackId"`
+	StackStatus      string            `json:"stackStatus"`
+	CreationTime     string            `json:"creationTime"`
+	LastUpdatedTime  string            `json:"lastUpdatedTime,omitempty"`
+	Description      string            `json:"description,omitempty"`
+	Tags             map[string]string `json:"tags,omitempty"`
+}
+
+type GetStacksResponseBody struct {
+	Message string      `json:"message"`
+	Account string      `json:"account"`
+	Owner   string      `json:"owner"`
+	Stacks  []StackInfo `json:"stacks"`
+}
+
+// Common response type
 type ResponseBody struct {
 	Message   string `json:"message"`
 	StackID   string `json:"stackId,omitempty"`

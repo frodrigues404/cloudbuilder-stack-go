@@ -27,3 +27,33 @@ module "create_stack_lambda" {
     ]
   })
 }
+
+module "get_stacks_lambda" {
+  source             = "./modules/lambda"
+  name               = "${var.project}-get-stacks-ms"
+  description        = "Get CloudFormation Stacks from target account"
+  handler            = "${path.module}/cmd/cloudformation-ms/get-stacks/main.handler"
+  path               = "${path.module}/cmd/cloudformation-ms/get-stacks/cmd/lambda"
+  api_execution_arn  = module.api_gateway.api_execution_arn
+  attach_policy_json = true
+  variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    USER_POOL_ID        = aws_cognito_user_pool.user_pool.id
+    REGION              = var.region
+  }
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["cloudformation:ListStacks", "cloudformation:DescribeStacks"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "*"
+      }
+    ]
+  })
+}

@@ -75,5 +75,13 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
+    "GET /cf/get-stacks" = {
+      integration = {
+        uri                    = module.get_stacks_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
   }
 }
