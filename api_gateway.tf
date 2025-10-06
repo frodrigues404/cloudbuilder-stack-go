@@ -67,6 +67,22 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
+    "POST /organization/register-git" = {
+      integration = {
+        uri                    = module.create_codestar_connections_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
+    "POST /beanstalk/create" = {
+      integration = {
+        uri                    = module.create_beanstalk_env_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
     "POST /cf/create-stack" = {
       integration = {
         uri                    = module.create_stack_lambda.lambda_function_arn

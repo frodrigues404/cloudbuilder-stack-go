@@ -56,3 +56,67 @@ module "create_secret_keys_lambda" {
     }
   ]
 }
+
+
+module "create_codestar_connections_lambda" {
+  source            = "./modules/lambda"
+  name              = "${var.project}-git-connection-ms"
+  description       = "Create CodeStar Connections"
+  handler           = "${path.module}/cmd/organizations-ms/git-connection/main.handler"
+  path              = "${path.module}/cmd/organizations-ms/git-connection"
+  api_execution_arn = module.api_gateway.api_execution_arn
+  variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+module "create_beanstalk_env_lambda" {
+  source            = "./modules/lambda"
+  name              = "${var.project}-create-beanstalk-env-ms"
+  description       = "Create Elastic Beanstalk Environment"
+  handler           = "${path.module}/cmd/beanstalk-ms/main.handler"
+  path              = "${path.module}/cmd/beanstalk-ms/"
+  api_execution_arn = module.api_gateway.api_execution_arn
+  variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["elasticbeanstalk:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["codepipeline:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["iam:*"]
+        Resource = "*"
+      }
+    ]
+  })
+}
