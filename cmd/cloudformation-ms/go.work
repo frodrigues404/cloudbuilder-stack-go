@@ -2,6 +2,7 @@ go 1.24.6
 
 use (
 	./create-stack
-	./get-stacks
+	./describe-stack
+	./list-stacks
 	./shared
 )

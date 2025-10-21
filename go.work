@@ -1,0 +1,9 @@
+go 1.24.6
+
+use (
+    ./cmd/organizations-ms/git-connection/create-connection
+    ./cmd/organizations-ms/account-keys/create-account
+    ./cmd/cloudformation-ms/shared
+)
+
+

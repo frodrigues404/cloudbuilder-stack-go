@@ -8,7 +8,6 @@ module "api_gateway" {
   create_certificate    = false
   create_domain_name    = false
   create_domain_records = false
-  
   authorizers = {
     cognito = {
       authorizer_type  = "JWT"
@@ -67,9 +66,25 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
+    "GET /organization/accounts" = {
+      integration = {
+        uri                    = module.list_account_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
     "POST /organization/register-git" = {
       integration = {
         uri                    = module.create_codestar_connections_lambda.lambda_function_arn
+        payload_format_version = "2.0"
+      }
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+    }
+    "GET /organization/repositories" = {
+      integration = {
+        uri                    = module.list_codestar_connections_lambda.lambda_function_arn
         payload_format_version = "2.0"
       }
       authorization_type = "JWT"
@@ -91,9 +106,9 @@ module "api_gateway" {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
     }
-    "GET /cf/get-stacks" = {
+    "GET /cf/stacks" = {
       integration = {
-        uri                    = module.get_stacks_lambda.lambda_function_arn
+        uri                    = module.describe_stack_lambda.lambda_function_arn
         payload_format_version = "2.0"
       }
       authorization_type = "JWT"

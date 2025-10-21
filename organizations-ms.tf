@@ -4,7 +4,7 @@ module "create_secret_keys_lambda" {
 
   function_name                           = "${var.project}-create-keys-ms"
   description                             = "Create Access Keys and store in Secrets Manager"
-  handler                                 = "cmd/organizations-ms/create-key/main.handler"
+  handler                                 = "cmd/organizations-ms/account-keys/create-account/main.handler"
   runtime                                 = "provided.al2023"
   tracing_mode                            = "Active"
   attach_policy_json                      = true
@@ -44,7 +44,7 @@ module "create_secret_keys_lambda" {
 
   source_path = [
     {
-      path = "${path.module}/cmd/organizations-ms/create-key"
+      path = "${path.module}/cmd/organizations-ms/account-keys/create-account"
       commands = [
         "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bootstrap main.go",
         ":zip",
@@ -62,8 +62,8 @@ module "create_codestar_connections_lambda" {
   source            = "./modules/lambda"
   name              = "${var.project}-git-connection-ms"
   description       = "Create CodeStar Connections"
-  handler           = "${path.module}/cmd/organizations-ms/git-connection/main.handler"
-  path              = "${path.module}/cmd/organizations-ms/git-connection"
+  handler           = "${path.module}/cmd/organizations-ms/git-connection/create-connection/main.handler"
+  path              = "${path.module}/cmd/organizations-ms/git-connection/create-connection"
   api_execution_arn = module.api_gateway.api_execution_arn
   variables = {
     USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
@@ -76,6 +76,54 @@ module "create_codestar_connections_lambda" {
       {
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+module "list_codestar_connections_lambda" {
+  source            = "./modules/lambda"
+  name              = "${var.project}-list-git-connection-ms"
+  description       = "List CodeStar Connections"
+  handler           = "${path.module}/cmd/organizations-ms/git-connection/list-connections/main.handler"
+  path              = "${path.module}/cmd/organizations-ms/git-connection/list-connections/"
+  api_execution_arn = module.api_gateway.api_execution_arn
+  variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+module "list_account_lambda" {
+  source            = "./modules/lambda"
+  name              = "${var.project}-list-account-ms"
+  description       = "List AWS Accounts"
+  handler           = "${path.module}/cmd/organizations-ms/account-keys/list-accounts/main.handler"
+  path              = "${path.module}/cmd/organizations-ms/account-keys/list-accounts/"
+  api_execution_arn = module.api_gateway.api_execution_arn
+  variables = {
+    USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.client.id
+    REGION              = var.region
+  }
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:ListSecrets"]
         Resource = "*"
       }
     ]
