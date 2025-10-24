@@ -20,6 +20,12 @@ module "api_gateway" {
     }
   }
 
+  cors_configuration = {
+    allow_headers = ["*"]
+    allow_methods = ["*"]
+    allow_origins = ["*"]
+  }
+
   stage_default_route_settings = {
     throttling_rate_limit  = 10
     throttling_burst_limit = 20
